@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/x-icon" href="/eta/icon/icon.png">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+
+<style>
+input.busrt{
+width:calc(100% - 75px); 
+display: inline;
+height:27px; 
+font-size:18px; 
+min-width:100px;
+}
+
+button.bt2{
+display: inline; 
+padding: 7px 16px;
+background-color: #d3d3d3a0;
+border-color: lightgray;
+}
+
+</style>
+<style>
+/* BUS ROUTE INPUT */
+button.rt_but{
+width:100%;
+height:60px;
+font-family:'Helvetica';
+
+border:none;
+background-color:#eee;
+font-size: 30px;
+}
+button.rt_but2{
+width:100%;
+height:60px;
+font-family:'Helvetica';
+font-size: 30px;
+border:none;
+background-color:#ddd;
+}
+
+label.rtnum{
+font-family:'Helvetica';
+display: block;
+text-align: center;
+font-weight:bold;
+font-size: 45px;
+}
+
+table.rt_table td:nth-child(1){width:27%}
+table.rt_table td:nth-child(2){width:27%}
+table.rt_table td:nth-child(3){width:27%}
+table.rt_table td:nth-child(4){width:19%}
+
+.rt_table{
+position: fixed;
+max-height:300px;
+bottom: 0;
+left:0;
+background-color:#eee;
+width: 100%;
+}
+.rt_table_alph{
+overflow-y: auto;
+max-height:240px;
+}
+
+#routetable{
+background-color:#ffd2dc;
+height:calc( 100vh - 350px); 
+overflow-y:auto;
+left:0;top:0;
+position: fixed;
+width:100%;
+}
+</style>
+
+<body>
+
+
+<div id="routetable">
+<table id="P"></table>
+</div>
+
+<table class="rt_table">
+<tr>
+<td colspan=4><label class="rtnum" id="rtnum"></label></td>
+<tr>
+<td><button class="rt_but" onclick="rt_sub(1)" id="rtnum_1">1</button></td>
+<td><button class="rt_but" onclick="rt_sub(2)" id="rtnum_2">2</button></td>
+<td><button class="rt_but" onclick="rt_sub(3)" id="rtnum_3">3</button></td>
+<td rowspan=4 height=100%><div class="rt_table_alph" id="rt_table_alph" height=100%></div></td>
+</tr>
+<tr>
+<td><button class="rt_but" onclick="rt_sub(4)" id="rtnum_4">4</button></td>
+<td><button class="rt_but" onclick="rt_sub(5)" id="rtnum_5">5</button></td>
+<td><button class="rt_but" onclick="rt_sub(6)" id="rtnum_6">6</button></td>
+</tr>
+<tr>
+<td><button class="rt_but" onclick="rt_sub(7)" id="rtnum_7">7</button></td>
+<td><button class="rt_but" onclick="rt_sub(8)" id="rtnum_8">8</button></td>
+<td><button class="rt_but" onclick="rt_sub(9)" id="rtnum_9">9</button></td>
+</tr>
+<tr>
+<td><button class="rt_but" onclick="rt_sub('clr')">⨂</button></td>
+<td><button class="rt_but" onclick="rt_sub(0)" id="rtnum_0">0</button></td>
+<td><button class="rt_but" onclick="rt_sub('back')">⌫</button></td>
+</tr>
+</table>
+
+</body>
+</html> 
+
+<script src="_rtlist.js"></script>
+<script>
+var rt_now = "";
+async function rt_sub(x){
+	switch (x){
+		case "clr": 
+			rt_now = "";
+		break;
+		case "back": 
+			rt_now = rt_now.substring(0,rt_now.length-1);
+		break;
+		default:
+			rt_now+=x.toString();
+		
+	}
+	$("#rtnum").text(rt_now);
+	rt_button_regen();
+	await submit2(rt_now);
+}
+
+function rt_button_regen(){
+	var validrt = ROUTES_num.filter(w=>w.startsWith(rt_now));
+	var validmove = [];
+	validrt.forEach(w=>{
+	var nextchr = w.substring(w.indexOf(rt_now)+rt_now.length)[0];
+	if(!validmove.includes(nextchr))validmove.push(nextchr)
+	});
+	["0","1","2","3","4","5","6","7","8","9"].forEach(q=>{$('#rtnum_'+q).prop('disabled', !validmove.includes(q));});
+	
+	var result = "";
+	console.log(validmove);	
+	validmove.filter(w=>w).filter(w=>!w.match(/\d/)).sort().forEach(w=>{
+		result+=`<button class="rt_but2" onclick="rt_sub('{#0}')">{#0}</button><br>`.replacement([w,w]);
+	});
+	$("#rt_table_alph").html(result);
+	
+}
+
+</script>
+
+<script>
+function httpGet(theUrl, callback)
+{
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            callback(xmlHttp.responseText);
+    }
+    xmlHttp.open("GET", theUrl, true); 
+    xmlHttp.send(null);
+}
+
+String.prototype.replacement = function(r){return this.replace(/\{\#\d\}/g, m => r.shift() || m);}
+</script>
+
+<script>
+//v5
+
+//var _rtlist={}
+var ROUTES=[];
+var ROUTES_num=[];
+//fetch('_rtlist.json').then(res => res.json()).then(json=>console.log(json));
+//httpGet("_rtlist.json",q=>{_rtlist=JSON.parse(q);ROUTES=getRtList2();rt_button_regen();submit("")})
+ROUTES=getRtList2();rt_button_regen();submit("")
+
+function getRtList2(){
+var s=[];
+var kk = [];
+Object.keys(_rtlist).forEach(w=>kk = kk.concat(Object.values(_rtlist[w])));
+kk.forEach(w=>{
+	Object.keys(w.var).forEach(e=>{
+		try{s.push({"co":w.co,"r":w.route,"d":w.var[e].dest_tc,"d_en":w.var[e].dest_en,"b":e,"sf":w.co+"+"+w.route+"+"+e})}catch{}
+		if(!ROUTES_num.includes(w.route))ROUTES_num.push(w.route)
+	})
+})
+return s.sort((a,b)=>{return (XXX(a.r) < XXX(b.r) ? 1 :-1)});
+}
+  
+
+function XXX(v) {
+  var Q1 = /[A-Z][0-9]+/;
+  if (Q1.exec(v))return v;
+    
+  var YYY = parseInt(v).toString().padStart(4, '0');
+  var mmm = /[A-Z]/g;
+  var nnn = mmm.exec(v);
+  return YYY + (nnn ? nnn[0] : '');
+}
+
+function submit(rt){
+document.getElementById("P").innerHTML = "";
+
+var INPUT_pend = ROUTES;
+if(rt)INPUT_pend = ROUTES.filter(q=>q.r.startsWith(rt));
+
+
+INPUT_pend.forEach((data,i)=>{
+    add_2(data,i)
+});
+}
+
+function add_2(data,i){
+var id=document.getElementById("P").insertRow(0);
+	id.setAttribute("id", "routename_"+data.co+"_"+data.r+"_"+data.b);
+	id.innerHTML = 
+`<button style="text-align: left; width:100%; background-color:#ffd2dc; border: none;height:3.5em" onclick="window.location.href = '/eta7/v13/route3.html?{#3}'">
+<img src="/eta7/icon/{#4}.png" style="width:6%;min-width:30px">
+<pre style="display: inline;font-size:5vw">{#5}</pre>
+</button>`.replacement([
+	//i%2==0?"#ccca":"#fffa",
+	//data.co+"_"+data.r+"_"+data.b,
+	data.sf,
+	((data.co=="CTB"&& /^(A|NA)/.test(data.r) ) ? "ctb_airport" : 
+		((data.co=="KMB"&& /^(A|NA)/.test(data.r) ) ? "lwb" : data.co
+	)),
+	data.r.padEnd(6," ")+"<small>"+data.d+"</small>"
+])
+}
+
+function submit2(rt){
+ROUTES.forEach((data,i)=>{
+	var id2 = document.getElementById("routename_"+data.co+"_"+data.r+"_"+data.b);
+id2.style.display = data.r.startsWith(rt) ? "block" : "none";
+})
+}
+</script>

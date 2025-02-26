@@ -1,0 +1,101 @@
+<html><head>
+<style>
+tr:nth-child(even) {
+  background-color: #ddd;
+}
+tr:nth-child(odd) {
+  background-color: #fff9;
+}
+img{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+}
+.settings{
+font-size:20px;
+border:0px;
+width:100px;
+height:50px;
+border-radius: 15px;
+background-color:#fdf;
+}
+.stop_button{
+text-align: left;
+width:100%; 
+border:1px; 
+background-color:#0000
+}
+</style>
+<script src="/eta/v13/script/main.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/x-icon" href="/eta/icon/icon.png">
+</head><body style="background-color:ffd2dc">
+
+<h1 style="text-align: center; font-size:40px">和天市路線資料</h1>
+
+<a href="/eta7/v13/route2.html">
+<div style="
+    margin: auto;
+    width: 60%;
+	max-width:400px;
+    border: 2px solid black;
+    padding: 10px; 
+    background-color:lightgray">
+ 
+<img src="/eta/icon/eta_stop.png">
+<p style="text-align: center; font-size:30px;color:black;">查詢巴士路綫</p>
+           
+</div>
+</a>
+
+<br>
+<div style="padding:0 0 0 0; background-color:#fff9;border-radius:6px;width:100%">
+<label style="font-size:20px">巴士站 書簽</label>
+<table id="B" style="width:100%"><tbody style="width:100%">
+</tbody></table>
+</div>
+</body>
+
+<script>
+var _stoplist={};
+httpGet("https://raw.githubusercontent.com/996633c/eta2/data/_stoplist.json",q=>{_stoplist=JSON.parse(q);update_bkmark()})
+
+var ck=[];
+
+function update_bkmark(){
+var ck = parseCookie("bookmark");
+if(!ck)return;
+while(document.getElementById("B").childNodes.length>0){document.getElementById("B").childNodes[0].remove()};
+ck.forEach((data,i)=>{
+    var Row = document.getElementById("B").insertRow(i);
+	Row.insertCell(0).innerHTML = 
+    `<button style="width:75px; font-size:4vw;" onclick="rmbk({#1});">X</button>`.replacement([i+""]);
+	
+
+	
+    Row.insertCell(0).innerHTML = 
+	`<button class="stop_button" onclick="{#0}">
+	<pre style="display: inline;font-size:20px;">書簽{#1} </pre>
+	<label style="display: inline;font-size:10px;"> {#2} </label>
+	</button>`
+	.replacement([
+		`window.location.href='`+"/eta/v13/bystop.html?color=1&stops="+data.stops.join(",")+"&time="+(data.preference.time?data.preference.time:0)+"&bkmark="+i+"&nort="+(data.preference.nort?data.preference.nort.join(","):"")+"'",
+		i+"",
+		data.stops.map(w=>_stoplist[w].data.name_tc).join("、<br>")
+	]);
+    });	
+}
+
+   
+function rmbk(i){
+ck = parseCookie("bookmark");
+ck[i]={"stops":[],"preference":{"time":0,"nort":[]}};
+SaveCookie(ck,"bookmark");
+update_bkmark()
+}
+</script>
+
+ 
+
+</html>

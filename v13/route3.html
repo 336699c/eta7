@@ -347,9 +347,9 @@ var NOWMODE = 1;
 //MODE_1 byroute INIT
 
 function busimg(co,rt){
-	return ((co=="CTB"&& /^[A,NA]/.test(rt) ) ? "ctb_airport" : 
-		((co=="KMB"&& /^[A,NA]/.test(rt) ) ? "lwb" : co
-	))
+	return ((co=="WSB(OD1)"&& /^(H)/.test(rt) ) ? "Wo Shing Sightseeing Bus" : 
+		((co=="WKB"&& /^(WT)/.test(rt) ) ? "WKB Sightseeing" : co)
+		)
 }
 
 var TimeDisplay = false;

@@ -410,8 +410,8 @@ for (i in ETA_bystop){
 	var routes_parsed = Object.keys(ETA_bystop[i]);
 
 	//console.log(_stoplist[i].rt)
-	/*
-	findAllStopRt(i).map(g=>g.co+"_"+g.rt).forEach(w=>{
+	
+	findAllStopRt(i,true).map(g=>g.co+"_"+g.rt).forEach(w=>{
 		if(!routes_parsed.includes(w.split("_")[1])){
 			routes_parsed.push(w.split("_")[1]);
 			var routevar = _rtlist[w.split("_")[0]][w.split("_")[1]];
@@ -436,7 +436,7 @@ for (i in ETA_bystop){
 				}
 			]
 		}
-	})*/
+	})
 	
 	console.log(ETA_bystop[i]);
 	routes_parsed.sort(rtsorter).forEach(j=>{

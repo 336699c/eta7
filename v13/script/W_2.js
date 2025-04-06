@@ -92,14 +92,18 @@ function format_eta2(f){
 	return n
 }
 
-function findAllStopRt(stopid){
+function findAllStopRt(stopid,strict){
     var rt=[];
     var TDID = _stoplist[stopid].td[0];
     Object.keys(_rtlist).forEach(co=>{
         Object.keys(_rtlist[co]).forEach(r=>{
             Object.keys(_rtlist[co][r].var).forEach(w=>{
                 _rtlist[co][r].var[w].stops.forEach((t,i)=>{
+                    if(strict){
+                        if(t==stopid)rt.push({co:co, rt:r, bound:w, id:i, stop:t})
+                    }else{
                     if(t==stopid || t==TDID || _stoplist[t].td[0] == stopid || _stoplist[t].td[0] == TDID)rt.push({co:co, rt:r, bound:w, id:i, stop:t})
+                    }
                 })
             })
         })

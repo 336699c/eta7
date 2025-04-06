@@ -29,7 +29,7 @@ function apply_eta2(){
     var lastbus = 9e9;
 	RT_data.stops.forEach((w,i)=>{
         var time = findNextBusTime(i);
-        console.log(time);
+        //console.log(time);
         if(time[0][0]<lastbus && i>0){
             document.getElementById("bus_"+w).innerHTML = `<div style="position: relative;color:#333;font-size:22px"><div style="position: absolute;top: 50%;left: 50%;transform: translate(-50%, -65%);"></div><img src="/eta7/icon/{#0}.png" style="width:30px"></div>`.replacement([time[0][2]?time[0][2]:INPUT[0]]);
         }else{

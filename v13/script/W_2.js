@@ -48,7 +48,9 @@ function apply_eta2(){
         var time = findNextBusTime(i,RT_data);
         //console.log(time);
         if(time && time[0][0]<lastbus && i>0){
-            document.getElementById("bus_"+w).innerHTML = `<div style="position: relative;color:#333;font-size:22px"><div style="position: absolute;top: 50%;left: 50%;transform: translate(-50%, -65%);"></div><img src="/eta7/icon/{#0}.png" style="width:30px"></div>`.replacement([time[0][2]?time[0][2]:busimg(INPUT[0],INPUT[1])]);
+            document.getElementById("bus_"+w).innerHTML = `<div style="position: relative;color:#333;font-size:22px"><div style="position: absolute;top: 50%;left: 50%;transform: translate(-50%, -65%);"></div><img src="/eta7/icon/{#0}.png" style="width:30px"></div>`.replacement([
+                busimg(TranslateCO(time[0][2]?time[0][2]:INPUT[0],INPUT[1]),INPUT[1])
+            ]);
         }else{
             document.getElementById("bus_"+w).innerHTML = ""
         }
@@ -131,15 +133,23 @@ function getAllETAs(stopid){
     //for co field equals to "WSF" and "WSB", refer back to _rtlist to check whether their company name is (OD1) or (OD2) or (OD3)
     ETA.forEach(w=>{
         if(["WSF","WSB"].includes(w.co)){
-            Object.keys(_rtlist).forEach(co => {
-                if (_rtlist[co][w.route]) {
-                    if ((w.co == "WSB" && co.startsWith("WSB")) || (w.co == "WSF" &&co.startsWith("WSF"))) {
-                        w.co = co
-                    }
-                }
-            });
+            w.co = TranslateCO(w.co,w.route);
         }
     })
 
     return ETA;
+}
+
+function TranslateCO(co2,route){
+    //WHY SOMEONE USE MORE THAN 1 PNG TO REPRESENT A COMPANY?
+    var s = co2;
+    Object.keys(_rtlist).forEach(co => {
+        if (_rtlist[co][route]) {
+            if ((co2 == "WSB" && co.startsWith("WSB")) || (co2 == "WSF" &&co.startsWith("WSF"))) {
+                s = co;
+                return co;
+            }
+        }
+    });
+    return s;
 }

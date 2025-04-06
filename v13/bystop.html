@@ -390,6 +390,7 @@ while(document.getElementById("P").childNodes.length>0){document.getElementById(
 RetrievedETA = RetrievedETA.sort((a,b)=>{return -rtsorter(a.route,b.route)});
 for (i in RetrievedETA)RetrievedETA[i].etaid = i;
 var ETA_bystop = groupAndSort(RetrievedETA,"stop");
+console.log(ETA_bystop);
 for (i in ETA_bystop)ETA_bystop[i] = groupAndSort(ETA_bystop[i],"route");
 
 console.log(ETA_bystop);
@@ -407,7 +408,9 @@ for (i in ETA_bystop){
 	row.className = "stopNameRow";
 	
 	var routes_parsed = Object.keys(ETA_bystop[i]);
+
 	//console.log(_stoplist[i].rt)
+	/*
 	findAllStopRt(i).map(g=>g.co+"_"+g.rt).forEach(w=>{
 		if(!routes_parsed.includes(w.split("_")[1])){
 			routes_parsed.push(w.split("_")[1]);
@@ -433,7 +436,7 @@ for (i in ETA_bystop){
 				}
 			]
 		}
-	})
+	})*/
 	
 	console.log(ETA_bystop[i]);
 	routes_parsed.sort(rtsorter).forEach(j=>{

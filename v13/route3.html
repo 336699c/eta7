@@ -573,7 +573,7 @@ document.getElementById("stop_"+s).innerHTML = `
 s,s,
 s,s,
 
-"/eta7/v13/bystop.html?color=1&stops="+RemoveSame(_stoplist[s].alt,s)+"&CHG="+INPUT[0]+"_"+INPUT[1]+"_"+INPUT[2][0],
+"/eta7/v13/bystop.html?color=1&stops="+s+"&CHG="+INPUT[0]+"_"+INPUT[1]+"_"+INPUT[2][0],
 s,s
 ])
 }
@@ -631,9 +631,9 @@ function iframe_map_handler(s){
 function iframe_handler(s,t){
 	$('#iframe_stop_'+s).show();
 	$('#div_stop_'+s).hide();
-	$('#iframe_stop_'+s).attr('src',  "/eta7/v13/bystop.html?color=1&byrt=" + t + "&stops="+RemoveSame(_stoplist[s].alt,s)+"&CHG="+INPUT[0]+"_"+INPUT[1]+"_"+INPUT[2][0]);
+	$('#iframe_stop_'+s).attr('src',  "/eta7/v13/bystop.html?color=1&byrt=" + t + "&stops="+s+"&CHG="+INPUT[0]+"_"+INPUT[1]+"_"+INPUT[2][0]);
 }
-
+/*
 function RemoveSame(f,s){
 if(s)f.push(s);
 var tmp = [];
@@ -641,7 +641,7 @@ f.forEach(w=>{if(!tmp.includes(w))tmp.push(w)});
 return tmp;
 }
 
-/*
+
 setInterval(function (){
 if(document.visibilityState=="visible" && NOWMODE==1){
 	try{
@@ -952,7 +952,14 @@ function deg2rad(deg) {
 }
 </script>
 
+<script>
 
+setInterval(function (){
+    try{
+        apply_eta2()
+    }catch(error){console.log(error)}
+},1000);
+</script>
 
 </body>
 </html> 

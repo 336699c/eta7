@@ -249,6 +249,8 @@ border: none; /* Remove default border */
 
 <script src="_rtlist.js"></script>
 <script src="_stoplist.js"></script>
+<script src="script/W_2.js" ></script>
+
 <script>
 //overlay
 function overlay_off() {
@@ -639,7 +641,7 @@ f.forEach(w=>{if(!tmp.includes(w))tmp.push(w)});
 return tmp;
 }
 
-
+/*
 setInterval(function (){
 if(document.visibilityState=="visible" && NOWMODE==1){
 	try{
@@ -671,7 +673,7 @@ switch(NOWMODE){
 
 }
 },45000);
-
+*/
 function CHANGE_SCREEN(modex){
 	NOWMODE = modex;
 	document.getElementById("ROUTESTOP_header").style.display = modex==1||modex==2?"block":"none";
@@ -949,5 +951,8 @@ function deg2rad(deg) {
   return deg * (Math.PI/180)
 }
 </script>
+
+
+
 </body>
 </html> 

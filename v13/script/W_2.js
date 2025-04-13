@@ -5,14 +5,14 @@ function busimg(co,rt){
 }
 
 function parseNow(now,time){
-    return (now>1350&&now<1440&&time<75?(now-1440):now)
+    return (now>1350&&now<1440&&time<75)?(now-1440):now
 }
 function findNextBusTime(i,dd) {   
     const time_diff = dd.time;
     const sch = (dd.phtime && !(new Date().getDay() === 0 || new Date().getDay() === 6) ? dd.sch_wk2 : dd.sch2);
     const now = new Date().getHours() * 60 + new Date().getMinutes() + new Date().getSeconds()/60;
 
-    //now = 9;
+    //now = 3;
     //const next_departure = sch.filter(([time, co2]) => time > now).sort()[0];
     //Change the find next departure into find three next departure
     if(!sch)return 0;
@@ -20,9 +20,10 @@ function findNextBusTime(i,dd) {
         (time + (time_diff[i]+0)/60) > parseNow(now,time)
         && 
         (time + (time_diff[i]+0)/60) < (parseNow(now,time)+60)
-    ).sort((a,b)=>a[0]-b[0]).slice(0,3);
+    ).slice(0,3);
     if (!next_three_departure[0]) return 0;
     
+    //console.log(next_three_departure)
     return next_three_departure.map(g=>[g[0] + (time_diff[i]+0)/60 - parseNow(now,g[0]), //time
             (g[0] > now), //departed
             g[1]

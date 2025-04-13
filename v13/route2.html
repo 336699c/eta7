@@ -114,6 +114,7 @@ width:100%;
 </html> 
 
 <script src="_rtlist.js"></script>
+<script src="script/W_2.js" ></script>
 <script>
 var rt_now = "";
 async function rt_sub(x){
@@ -225,9 +226,7 @@ var id=document.getElementById("P").insertRow(0);
 	//i%2==0?"#ccca":"#fffa",
 	//data.co+"_"+data.r+"_"+data.b,
 	data.sf,
-	((data.co=="WSB(OD1)"&& /^(H)/.test(data.r) ) ? "Wo Shing Sightseeing Bus" : 
-		((data.co=="WKB"&& /^(WT)/.test(data.r) ) ? "WKB Sightseeing" : data.co
-	)),
+	busimg(data.co, data.r),
 	data.r.padEnd(6," ")+"<small>"+data.d+"</small>"
 ])
 }

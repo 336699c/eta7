@@ -1,6 +1,6 @@
 function busimg(co,rt){
 	return ((co=="WSB(OD1)"&& /^(H)/.test(rt) ) ? "Wo Shing Sightseeing Bus" : 
-		((co=="WKB"&& /^(WT)/.test(rt) ) ? "WKB Sightseeing" : co)
+		((co=="WKB"&& /^(H)/.test(rt) ) ? "WKB Sightseeing" : co)
 		)
 }
 

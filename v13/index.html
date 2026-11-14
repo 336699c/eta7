@@ -27,14 +27,28 @@ border:1px;
 background-color:#0000
 }
 </style>
-<script src="/eta/v13/script/main.js"></script>
+<script>    
+window.onload = function(){
+    let a = parseCookie("bookmark");
+    if(a && localStorage.getItem('bookmarks')===null){
+        localStorage.setItem('bookmarks', JSON.stringify(a.map((g,i)=>({name:`書簽 ${i}`,stops:[g.stops]}))));
+        alert("請使用新主頁");
+        window.location.href="/eta";
+    };
+}
+
+</script>
+
+
+<script src="../script/eta6-data.js"></script>
+<script src="script/main.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="icon" type="image/x-icon" href="/eta/icon/icon.png">
-</head><body style="background-color:ffd2dc">
+<link rel="icon" type="image/x-icon" href="/eta7/icon/icon.png">
+</head><body style="background-color:d2dcff">
 
-<h1 style="text-align: center; font-size:40px">和天市路線資料</h1>
+<h1 style="text-align: center; font-size:40px"><small>歡迎使用</small><br>巴士到站預報</h1>
 
-<a href="/eta7/v13/route2.html">
+<a href="/eta7/index.html">
 <div style="
     margin: auto;
     width: 60%;
@@ -43,8 +57,8 @@ background-color:#0000
     padding: 10px; 
     background-color:lightgray">
  
-<img src="/eta/icon/eta_stop.png">
-<p style="text-align: center; font-size:30px;color:black;">查詢巴士路綫</p>
+<img src="/eta7/icon/eta_stop.png">
+<p style="text-align: center; font-size:30px;color:black;">前往全新主頁</p>
            
 </div>
 </a>
@@ -59,7 +73,7 @@ background-color:#0000
 
 <script>
 var _stoplist={};
-httpGet("https://raw.githubusercontent.com/996633c/eta2/data/_stoplist.json",q=>{_stoplist=JSON.parse(q);update_bkmark()})
+withEta6(()=>Eta6.legacy().then(d=>{_stoplist=d.stoplist;update_bkmark()}))
 
 var ck=[];
 
@@ -80,7 +94,7 @@ ck.forEach((data,i)=>{
 	<label style="display: inline;font-size:10px;"> {#2} </label>
 	</button>`
 	.replacement([
-		`window.location.href='`+"/eta/v13/bystop.html?color=1&stops="+data.stops.join(",")+"&time="+(data.preference.time?data.preference.time:0)+"&bkmark="+i+"&nort="+(data.preference.nort?data.preference.nort.join(","):"")+"'",
+		`window.location.href='`+"/eta7/v13/bystop.html?color=1&stops="+data.stops.join(",")+"&time="+(data.preference.time?data.preference.time:0)+"&bkmark="+i+"&nort="+(data.preference.nort?data.preference.nort.join(","):"")+"'",
 		i+"",
 		data.stops.map(w=>_stoplist[w].data.name_tc).join("、<br>")
 	]);

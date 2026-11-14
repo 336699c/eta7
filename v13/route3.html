@@ -196,7 +196,8 @@ border: none; /* Remove default border */
 </style>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
-<script src="/eta7/v13/script/main.js"></script>
+<script src="../script/eta6-data.js"></script>
+<script src="script/main.js"></script>
 
 </head>
 <body>
@@ -246,10 +247,6 @@ border: none; /* Remove default border */
 </div>
 
 </div>
-
-<script src="_rtlist.js"></script>
-<script src="_stoplist.js"></script>
-<script src="script/W_2.js" ></script>
 
 <script>
 //overlay
@@ -334,11 +331,10 @@ function CHANGEBUS_filterRoute(rt){
 </script>
 
 <script>
-//var _rtlist={}
-//var _stoplist={};
-var rss2 = 2; regen();
-//httpGet("https://raw.githubusercontent.com/996633c/eta2/data/_rtlist.json",q=>{_rtlist=JSON.parse(q);rss2++;regen()})
-//httpGet("https://raw.githubusercontent.com/996633c/eta2/data/_stoplist.json",q=>{_stoplist=JSON.parse(q);rss2++;regen()})
+var _rtlist={}
+var _stoplist={};
+var rss2 = 0;
+withEta6(()=>Eta6.legacy().then(d=>{_rtlist=d.rtlist;_stoplist=d.stoplist;rss2=2;regen()}))
 
 var RT_data = [];
 var INPUT = document.location.href.split("?")[1].split("+");
@@ -348,25 +344,17 @@ var NOWMODE = 1;
 
 //MODE_1 byroute INIT
 
-
+function busimg(co,rt){
+	return ((co=="CTB"&& /^[A,NA]/.test(rt) ) ? "ctb_airport" : 
+		((co=="KMB"&& /^[A,NA]/.test(rt) ) ? "lwb" : co
+	))
+}
 
 var TimeDisplay = false;
 
 function TimerSettings(){
 	TimeDisplay = !TimeDisplay;
 	$(".TimerDisplay")[0].src = "/eta7/icon/time_"+(TimeDisplay?"act":"cd")+".png"
-}
-
-function getRtList2(){
-var s=[];
-Object.keys(_rtlist).forEach(g=>{
-	Object.values(_rtlist[g]).forEach(w=>{
-		try{s.push([w.var.O.stops,[g,w.route,w.var.O.bound]]);}catch{}
-		try{s.push([w.var.I.stops,[g,w.route,w.var.I.bound]]);}catch{}
-	})
-})
-
-return s
 }
 
 function regen(){
@@ -395,16 +383,17 @@ function regen(){
 	s1.innerHTML = `<img src="/eta7/icon/{#0}.png" style="width:30px">`.replacement([busimg(INPUT[0],INPUT[1])]);
 	
 	var Fare = _rtlist[INPUT[0]][INPUT[1]]["fare"][INPUT[2]];
+	if(!Fare)Fare = _rtlist[INPUT[0]][INPUT[1]]["fare"][INPUT[2][0]+"1"];
 	var stoplist = document.getElementById("stoptable");
 	var ORIG=[];
 	RT_data.stops.forEach((w,i)=>{
 		var s = stoplist.insertRow().insertCell(0);
 		s.className = "rss";
-		s.innerHTML = `<button onclick="click2('{#0}')" class="rss"><table class="stoptable"><td class="stopid2"><label class="stopid">{#0}</label></td><td class="stopname3"><label class="stopname2"><big>{#1}</big><br>車費: \{#2}<br><small><small>{#3}</small></small></label></td></div><td class="bus" id="bus_{#5}"> </td><td class="eta" id="eta_{#5}"></td></table></button><div id="stop_{#5}">`.replacement([
+		s.innerHTML = `<button onclick="click2('{#0}')" class="rss"><table class="stoptable"><td class="stopid2"><label class="stopid">{#0}</label></td><td class="stopname3"><label class="stopname2"><big>{#1}</big><br>車費: \${#2}<br><small><small>{#3}</small></small></label></td></div><td class="bus" id="bus_{#5}"> </td><td class="eta" id="eta_{#5}"></td></table></button><div id="stop_{#5}">`.replacement([
 			w,
 			i+1,
 			_stoplist[w].data.name_tc,
-			!Fare[i]||Fare[i]=="-1"||Fare[i]=="-2"?"NaN":Fare[i][0],
+			!Fare[i]||Fare[i]=="-1"||Fare[i]=="-2"?"NaN":Fare[i].map(e=>e[0]),
 			w,
 			ORIG.includes(w)?"NaN":w,
 			ORIG.includes(w)?"NaN":w,
@@ -412,7 +401,9 @@ function regen(){
 		]);
 		ORIG.push(w)
 	});
-	if (INPUT[0]=="KMB"){
+	if(_rtlist.KMB && _rtlist.KMB[INPUT[1]] && _rtlist.CTB && _rtlist.CTB[INPUT[1]]){
+		joint_eta(INPUT[1]);
+	}else if (INPUT[0]=="KMB"){
 		KMB_eta(INPUT[1],INPUT[2][0],INPUT[2][1])
 	}else{
 		CTB_eta(INPUT[1],INPUT[2])
@@ -423,7 +414,6 @@ function regen(){
 var ETA_RESULT={};
 var COJOIN_ETA=false;
 function KMB_eta(rt,bound,service,spec,callback){
-	return -111;
 	httpGet("https://data.etabus.gov.hk/v1/transport/kmb/route-eta/"+rt+"/"+service,(f,g)=>{
 		var s={};
 		JSON.parse(f).data.filter(w=>w.dir==g[1]).forEach(w=>{
@@ -455,12 +445,11 @@ function KMB_eta(rt,bound,service,spec,callback){
 
 var counter = 0;
 function CTB_eta(rt,bound){	
-	return -111;
 	var counter = RT_data.stops.length;
 	ETA_RESULT={};
 	COJOIN_ETA=false;
 	RT_data.stops.forEach(w=>{
-		httpGet("https://rt.data.gov.hk/v2/transport/citybus/eta7/ctb/"+w+"/"+rt,(f,g)=>{
+		httpGet("https://rt.data.gov.hk/v2/transport/citybus/eta/ctb/"+w+"/"+rt,(f,g)=>{
 			counter--;
 			var s = JSON.parse(f).data;
 			if (s.filter(w=>w.dir==g).length!=0)s=s.filter(w=>w.dir==g);
@@ -480,6 +469,83 @@ function CTB_eta(rt,bound){
 			}
 		},bound)
 	})
+}
+
+/**
+ * Always call back, with null on a non-200 / invalid response, so the joint
+ * pending counter can never stall.
+ */
+function getJSON(url, callback){
+	var x = new XMLHttpRequest();
+	x.onreadystatechange = function(){
+		if(x.readyState != 4)return;
+		var d = null;
+		try{ d = x.status == 200 ? JSON.parse(x.responseText) : null; }catch(error){}
+		callback(d);
+	};
+	x.open("GET", url, true);
+	x.send(null);
+}
+
+function _destMatch(a,b){
+	var norm = function(s){return String(s==null?"":s).replace(/[\s()（）]/g,"");};
+	a = norm(a); b = norm(b);
+	if(!a || !b)return false;
+	return a===b || a.indexOf(b)>=0 || b.indexOf(a)>=0;
+}
+
+/**
+ * Joint route: query both companies by stop id. Each ETA is attached to the
+ * row whose stop produced it, so different company sequences are harmless.
+ */
+function joint_eta(rt){
+	var dest = RT_data.dest_tc;
+	var rows = RT_data.stops;
+	var jobs = [];
+
+	rows.forEach((id,i)=>{
+		var own = INPUT[0] == "KMB" ? "KMB" : "CTB";
+		var alt = ((_stoplist[id]||{}).alt||[]);
+		var ctbId = own=="CTB" ? id : alt.filter(w=>w.length==6)[0];
+		var kmbId = own=="KMB" ? id : alt.filter(w=>w.length!=6)[0];
+
+		if(ctbId)jobs.push({
+			co:"CTB", seq:i+1,
+			url:"https://rt.data.gov.hk/v2/transport/citybus/eta/ctb/"+ctbId+"/"+rt
+		});
+		if(kmbId)jobs.push({
+			co:"KMB", seq:i+1,
+			url:"https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/"+kmbId
+		});
+	});
+
+	var counter = jobs.length;
+	ETA_RESULT={};
+	COJOIN_ETA=true;
+
+	jobs.forEach(job=>{
+		getJSON(job.url, d=>{
+			if(d && d.data){
+				var s = d.data.filter(w=>w.route==rt);
+				var matched = s.filter(w=>_destMatch(w.dest_tc,dest));
+				if(matched.length)s = matched;
+				else s = s.filter(w=>w.dir==INPUT[2][0]);
+
+				if(job.co=="KMB"){
+					var wanted = s.some(w=>w.service_type==1);
+					if(wanted)s = s.filter(w=>w.service_type==1);
+				}
+
+				s.forEach(w=>{
+					if(!ETA_RESULT[job.seq])ETA_RESULT[job.seq]=[];
+					ETA_RESULT[job.seq].push({
+						eta:w.eta, seq:job.seq, rmk:w.rmk_tc, co:job.co
+					});
+				});
+			}
+			if(--counter==0)apply_eta(ETA_RESULT);
+		});
+	});
 }
 
 function FIND_Coor_ROUTE(rt,bound){
@@ -569,7 +635,7 @@ document.getElementById("stop_"+s).innerHTML = `
 s,s,
 s,s,
 
-"/eta7/v13/bystop.html?color=1&stops="+s+"&CHG="+INPUT[0]+"_"+INPUT[1]+"_"+INPUT[2][0],
+"/eta7/v13/bystop.html?color=1&stops="+RemoveSame(_stoplist[s].alt,s)+"&CHG="+INPUT[0]+"_"+INPUT[1]+"_"+INPUT[2][0],
 s,s
 ])
 }
@@ -627,9 +693,9 @@ function iframe_map_handler(s){
 function iframe_handler(s,t){
 	$('#iframe_stop_'+s).show();
 	$('#div_stop_'+s).hide();
-	$('#iframe_stop_'+s).attr('src',  "/eta7/v13/bystop.html?color=1&byrt=" + t + "&stops="+s+"&CHG="+INPUT[0]+"_"+INPUT[1]+"_"+INPUT[2][0]);
+	$('#iframe_stop_'+s).attr('src',  "/eta7/v13/bystop.html?color=1&byrt=" + t + "&stops="+RemoveSame(_stoplist[s].alt,s)+"&CHG="+INPUT[0]+"_"+INPUT[1]+"_"+INPUT[2][0]);
 }
-/*
+
 function RemoveSame(f,s){
 if(s)f.push(s);
 var tmp = [];
@@ -669,7 +735,7 @@ switch(NOWMODE){
 
 }
 },45000);
-*/
+
 function CHANGE_SCREEN(modex){
 	NOWMODE = modex;
 	document.getElementById("ROUTESTOP_header").style.display = modex==1||modex==2?"block":"none";
@@ -927,7 +993,19 @@ httpGet("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/"+f,func2,parm2);
 }
 }
 
+function getRtList2(){
+var s=[];
+Object.values(_rtlist.CTB).forEach(w=>{
+try{s.push([w.var.O.stops,["CTB",w.route,w.var.O.bound]]);}catch{}
+try{s.push([w.var.I.stops,["CTB",w.route,w.var.I.bound]]);}catch{}
+})
 
+Object.values(_rtlist.KMB).forEach(w=>{
+try{s.push([w.var.O1.stops,["KMB",w.route,w.var.O1.bound]]);}catch{}
+try{s.push([w.var.I1.stops,["KMB",w.route,w.var.I1.bound]]);}catch{}
+})
+return s
+}
 
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   var R = 6371; // Radius of the earth in km
@@ -947,15 +1025,5 @@ function deg2rad(deg) {
   return deg * (Math.PI/180)
 }
 </script>
-
-<script>
-
-setInterval(function (){
-    try{
-        apply_eta2()
-    }catch(error){console.log(error)}
-},1000);
-</script>
-
 </body>
 </html> 

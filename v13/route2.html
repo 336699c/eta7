@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="icon" type="image/x-icon" href="/eta/icon/icon.png">
+<link rel="icon" type="image/x-icon" href="/eta7/icon/icon.png">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+<script src="../script/eta6-data.js"></script>
 
 <style>
 input.busrt{
@@ -20,6 +21,16 @@ background-color: #d3d3d3a0;
 border-color: lightgray;
 }
 
+
+body{
+	padding: 0; /* Eliminates padding */
+    border: none; /* Eliminates border */
+    margin: 0; /* Optional: Removes margin for a cleaner look */
+	justify-content: center;
+	display: flex;
+	background-color: #151721; /* Light gray background */
+	}
+	
 </style>
 <style>
 /* BUS ROUTE INPUT */
@@ -55,8 +66,7 @@ table.rt_table td:nth-child(3){width:27%}
 table.rt_table td:nth-child(4){width:19%}
 
 .rt_table{
-position: fixed;
-max-height:300px;
+height:270px;
 bottom: 0;
 left:0;
 background-color:#eee;
@@ -68,18 +78,19 @@ max-height:240px;
 }
 
 #routetable{
-background-color:#ffd2dc;
-height:calc( 100vh - 350px); 
+background-color:#dff;
+height:calc(100vh - 270px);
 overflow-y:auto;
 left:0;top:0;
-position: fixed;
+//position: fixed;
 width:100%;
 }
+
 </style>
 
 <body>
 
-
+<div class="outer0">
 <div id="routetable">
 <table id="P"></table>
 </div>
@@ -109,12 +120,11 @@ width:100%;
 <td><button class="rt_but" onclick="rt_sub('back')">⌫</button></td>
 </tr>
 </table>
+</div>
 
 </body>
 </html> 
 
-<script src="_rtlist.js"></script>
-<script src="script/W_2.js" ></script>
 <script>
 var rt_now = "";
 async function rt_sub(x){
@@ -172,18 +182,31 @@ String.prototype.replacement = function(r){return this.replace(/\{\#\d\}/g, m =>
 <script>
 //v5
 
-//var _rtlist={}
+function withEta6(callback){
+	if(window.Eta6)return callback();
+	var s = document.createElement("script");
+	s.src = "../script/eta6-data.js";
+	s.onload = function(){ window.Eta6 ? callback() : eta6Error(); };
+	s.onerror = eta6Error;
+	document.head.appendChild(s);
+}
+function eta6Error(){
+	if(document.getElementById("eta6_error"))return;
+	var p = document.createElement("p");
+	p.id = "eta6_error";
+	p.style.cssText = "color:#b00;padding:12px;font-family:system-ui";
+	p.textContent = "eta6 資料載入失敗，請重新整理。";
+	document.body.insertBefore(p, document.body.firstChild);
+}
+
+var _rtlist={}
 var ROUTES=[];
 var ROUTES_num=[];
-//fetch('_rtlist.json').then(res => res.json()).then(json=>console.log(json));
-//httpGet("_rtlist.json",q=>{_rtlist=JSON.parse(q);ROUTES=getRtList2();rt_button_regen();submit("")})
-ROUTES=getRtList2();rt_button_regen();submit("")
+withEta6(()=>Eta6.legacy().then(d=>{_rtlist=d.rtlist;ROUTES=getRtList2();rt_button_regen();submit("")}))
 
 function getRtList2(){
 var s=[];
-var kk = [];
-Object.keys(_rtlist).forEach(w=>kk = kk.concat(Object.values(_rtlist[w])));
-kk.forEach(w=>{
+Object.values(_rtlist.CTB).concat(Object.values(_rtlist.KMB)).forEach(w=>{
 	Object.keys(w.var).forEach(e=>{
 		try{s.push({"co":w.co,"r":w.route,"d":w.var[e].dest_tc,"d_en":w.var[e].dest_en,"b":e,"sf":w.co+"+"+w.route+"+"+e})}catch{}
 		if(!ROUTES_num.includes(w.route))ROUTES_num.push(w.route)
@@ -219,14 +242,16 @@ function add_2(data,i){
 var id=document.getElementById("P").insertRow(0);
 	id.setAttribute("id", "routename_"+data.co+"_"+data.r+"_"+data.b);
 	id.innerHTML = 
-`<button style="text-align: left; width:100%; background-color:#ffd2dc; border: none;height:3.5em" onclick="window.location.href = '/eta7/v13/route3.html?{#3}'">
+`<button style="text-align: left; width:100%; background-color:#dff; border: none;height:3.5em" onclick="window.location.href = '/eta7/v13/route3.html?{#3}'">
 <img src="/eta7/icon/{#4}.png" style="width:6%;min-width:30px">
 <pre style="display: inline;font-size:5vw">{#5}</pre>
 </button>`.replacement([
 	//i%2==0?"#ccca":"#fffa",
 	//data.co+"_"+data.r+"_"+data.b,
 	data.sf,
-	busimg(data.co, data.r),
+	((data.co=="CTB"&& /^(A|NA)/.test(data.r) ) ? "ctb_airport" : 
+		((data.co=="KMB"&& /^(A|NA)/.test(data.r) ) ? "lwb" : data.co
+	)),
 	data.r.padEnd(6," ")+"<small>"+data.d+"</small>"
 ])
 }

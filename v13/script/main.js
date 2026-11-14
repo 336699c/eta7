@@ -41,37 +41,43 @@ function parseCookie(value){
 
 function SaveCookie(value,key){
 	value.map(w=>w.stops = window.btoa(JSON.stringify(w.stops)));
-document.cookie = `{#0}={#1}; path=/eta/v13/ ; expires ='Wed, 27 Mar 2047 16:00:00 GMT'`.replacement([
+document.cookie = `{#0}={#1}; path=/eta7/v13/ ; expires ='Wed, 27 Mar 2047 16:00:00 GMT'`.replacement([
 	key,
 	JSON.stringify(value)
 ])
 }
 
 function rtsorter(a,b){
-	var an = parseInt(a.match(/^\d+/));
-	var bn = parseInt(b.match(/^\d+/));
-	
-	if(!an && bn)return 1;
-	if(!bn && an)return -1;
-	if(an && bn && an!=bn){
-		return an > bn ? 1 : -1;
-	}
-	
-	var an2 = parseInt(a.match(/\d+/));
-	var bn2 = parseInt(b.match(/\d+/));
+	var anum = a.match(/\d+/g);
+	var bnum = b.match(/\d+/g);
+	if(!anum && !bnum)return 0;
+	if(!anum || !bnum)return anum?-1:1;
+	var aid = a.split(anum)[0]+anum.toString().padStart(5,"0")+ (a.split(bnum)[1] ? a.split(bnum)[1] : "");
+	var bid = b.split(bnum)[0]+bnum.toString().padStart(5,"0")+ (b.split(bnum)[1] ? b.split(bnum)[1] : "");
+	console.log(aid,bid);
+	return aid>bid?1:-1
+}
 
-	var ad = a.match(/^[a-z,A-Z]+/)+"";
-	var bd = b.match(/^[a-z,A-Z]+/)+"";
+/**
+ * eta7: run a loader once the eta6 adapter is available. If the script tag
+ * failed to load (wrong deployment base, missing file), retry once and show
+ * a readable message instead of an uncaught ReferenceError.
+ */
+function withEta6(callback){
+	if(window.Eta6)return callback();
+	var base = /\/v13\//.test(location.pathname) ? "../" : "";
+	var s = document.createElement("script");
+	s.src = base + "script/eta6-data.js";
+	s.onload = function(){ window.Eta6 ? callback() : eta6Error(); };
+	s.onerror = eta6Error;
+	document.head.appendChild(s);
+}
 
-	var as = a.match(/[a-z,A-Z]+$/)+"";
-	var bs = b.match(/[a-z,A-Z]+$/)+"";
-
-	if (ad && bd && ad != bd)return ad > bd ? 1 : -1;
-	if(an2 && bn2){
-		if(an2!=bn2)return an2 > bn2 ? 1 : -1;
-		if(as=="null" && bs)return -1;
-		if(as && bs=="null")return 1;
-		return as > bs ? 1 : -1;
-	}
-	console.log("ERROR",a,b)
+function eta6Error(){
+	if(document.getElementById("eta6_error"))return;
+	var p = document.createElement("p");
+	p.id = "eta6_error";
+	p.style.cssText = "color:#b00;padding:12px;font-family:system-ui";
+	p.textContent = "eta6 資料載入失敗，請重新整理。";
+	document.body.insertBefore(p, document.body.firstChild);
 }

@@ -138,6 +138,22 @@
         });
     };
 
+    /**
+     * Company-styled stop name chosen in the settings, or null when the
+     * setting is "auto" or that operator has no published name for the stop.
+     * @param {object} rec - legacy stop record
+     * @param {string} lang - "zh" or "en"
+     * @return {string|null}
+     */
+    function preferredName(rec, lang) {
+        var sel = null;
+        try { sel = localStorage.getItem("coopStopName"); } catch (e) {}
+        if (sel != "ctb" && sel != "kmb") return null;
+        var by = rec && rec.byCo && rec.byCo[sel == "ctb" ? "CTB" : "KMB"];
+        var name = by && (typeof by == "string" ? by : by[lang]);
+        return name || null;
+    }
+
     SE.buildStops = function () {
         var seen = {};
         SE.stops = [];
@@ -147,10 +163,11 @@
             var code = rec.code || id;
             if (seen[code]) return;
             seen[code] = 1;
+            var data = rec.data || {};
             SE.stops.push({
                 code: code,
-                name_tc: (rec.data && rec.data.name_tc) || code,
-                name_en: (rec.data && rec.data.name_en) || "",
+                name_tc: preferredName(rec, "zh") || data.name_tc || code,
+                name_en: preferredName(rec, "en") || data.name_en || "",
                 ids: unique([code].concat(rec.alt || [])),
                 rt: rec.rt || [],
                 rows: []
@@ -245,7 +262,12 @@
             g.icon = g.joint ? "KMB+CTB" : SE.iconFor(g.cos, g.route);
             g.fare = SE.fare(g.etas[0]);
             return g;
-        }).sort(function (a, b) { return routeCmp(a.route, b.route); });
+        }).sort(function (a, b) {
+            var ea = a.etas.length ? a.etas[0].eta : Infinity;
+            var eb = b.etas.length ? b.etas[0].eta : Infinity;
+            if (ea !== eb) return ea - eb;
+            return routeCmp(a.route, b.route);
+        });
     };
 
     SE.flatRows = function () {
@@ -423,8 +445,42 @@
 
     function stopName(id) {
         var rec = SE.legacy.stoplist[id];
-        return (rec && rec.data && rec.data.name_tc) || id;
+        return preferredName(rec, "zh")
+            || (rec && rec.data && rec.data.name_tc) || id;
     }
+
+    /** Great-circle distance between two lat/lng points, in metres. */
+    function haversine(lat1, lng1, lat2, lng2) {
+        var R = 6371000;
+        var toRad = Math.PI / 180;
+        var dLat = (lat2 - lat1) * toRad;
+        var dLng = (lng2 - lng1) * toRad;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+            + Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad)
+            * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    /**
+     * Resolve the next stop along the route for one arrival row.
+     * Returns {name, distance} or null when the information is unavailable
+     * (e.g. the stop is the terminus or the route variant cannot be found).
+     */
+    SE.nextStopInfo = function (row) {
+        var v = variantWithStop(row.co, row.route, row.stopId);
+        if (!v) return null;
+        var idx = v.stops.indexOf(row.stopId);
+        if (idx < 0) return null;
+        var nextId = v.stops[idx + 1];
+        if (!nextId) return null;
+        var a = SE.legacy.stoplist[row.stopId];
+        var b = SE.legacy.stoplist[nextId];
+        if (!a || !b || !a.data || !b.data) return null;
+        return {
+            name: stopName(nextId),
+            distance: Math.round(haversine(a.data.lat, a.data.long, b.data.lat, b.data.long))
+        };
+    };
 
     /**
      * Resolve "where is the bus" for one arrival. Returns a promise of rows

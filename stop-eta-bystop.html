@@ -29,7 +29,7 @@ table.etas td{padding:10px 12px;vertical-align:top;}
 td.ic{width:52px;padding-right:0 !important;}
 td.ic img{width:34px;height:auto;display:block;}
 .l1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
-.l1 .rtnum{font-size:clamp(17px,5vw,24px);font-weight:800;letter-spacing:.5px;}
+.l1 .rtnum{font-size:clamp(17px,5vw,24px);font-weight:600;letter-spacing:.5px;}
 .l1 .to{font-size:clamp(12px,3.4vw,15px);color:#39404d;}
 .l1 .fare{margin-left:auto;font-size:clamp(10px,3vw,13px);color:var(--muted);font-variant-numeric:tabular-nums;}
 .l2{margin-top:4px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;}
@@ -136,7 +136,7 @@ function etaChip(row, joint) {
         + "</span>";
 }
 
-function renderStop(stop) {
+function renderStop(stop, groups) {
     var sec = document.createElement("section");
     sec.className = "stopsec";
 
@@ -152,7 +152,7 @@ function renderStop(stop) {
     bar.appendChild(rm);
     sec.appendChild(bar);
 
-    var groups = SE.routeGroups(stop);
+    groups = groups || SE.routeGroups(stop);
     if (!groups.length) {
         var p = document.createElement("div");
         p.className = "empty";
@@ -189,16 +189,25 @@ function render() {
     rowRefs = {};
     host.innerHTML = "";
 
-    var visible = 0;
+    var list = [];
     SE.stops.forEach(function (stop, i) {
         if (SE.hiddenStops[stop.code]) return;
-        visible++;
-        var sec = renderStop(stop);
-        if (SE.input.color) sec.style.background = ["#fff", "#f7fbff", "#fffdf7", "#f8fff9"][i % 4];
+        var groups = SE.routeGroups(stop);
+        var eta = groups.length ? groups[0].etas[0].eta : Infinity;
+        list.push({stop: stop, groups: groups, eta: eta, index: i});
+    });
+
+    list.sort(function (a, b) {
+        return (a.eta - b.eta) || (a.index - b.index);
+    });
+
+    list.forEach(function (item) {
+        var sec = renderStop(item.stop, item.groups);
+        if (SE.input.color) sec.style.background = ["#fff", "#f7fbff", "#fffdf7", "#f8fff9"][item.index % 4];
         host.appendChild(sec);
     });
 
-    emptyBox.hidden = visible > 0;
+    emptyBox.hidden = list.length > 0;
 }
 
 function tick() {

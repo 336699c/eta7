@@ -161,16 +161,52 @@ function build(index, routeStop, stops, stopRoutes, operatorMap, nearby, nlbList
         return out;
     }
 
+    /**
+     * Canonical display name. eta6 v2.1 stores `en` / `zh` as maps
+     * ({"default": ..., "CTB": ...}), while older files used strings.
+     */
+    function nameOf(value, fallback) {
+        if (value && typeof value == "object") {
+            if (value["default"]) return value["default"];
+            var keys = Object.keys(value);
+            for (var i = 0; i < keys.length; i++) {
+                if (keys[i] != "default" && value[keys[i]]) return value[keys[i]];
+            }
+            return fallback || "";
+        }
+        return value || fallback || "";
+    }
+
+    /** Per-company names from a nested name map or the legacy `ops` map. */
+    function companyNames(rec, lang) {
+        var value = rec[lang];
+        if (value && typeof value == "object") {
+            var out = {};
+            Object.keys(value).forEach(function (k) {
+                if (k != "default" && value[k]) out[k] = value[k];
+            });
+            return out;
+        }
+        return lang == "en" ? (rec.ops || {}) : {};
+    }
+
     function stopInfo(code) {
         var s = stops[code] || {};
         var loc = s.loc || [0, 0];
-        var ops = s.ops || {};
+        var opsEn = companyNames(s, "en");
+        var opsZh = companyNames(s, "zh");
+        var en = nameOf(s.en, "");
+        var zh = nameOf(s.zh, en);
         return {
-            name: {zh: s.zh || "", en: s.en || ""},
-            // some operators publish a different stop name (English only)
+            name: {zh: zh, en: en},
+            // per-operator published names, including the Chinese ones stored
+            // in eta6 v2.1 (`zh` is a map, not a string)
             byCo: {
-                CTB: ops.CTB || null,
-                KMB: ops.KMB || ops["KMB+CTB"] || null
+                CTB: {en: opsEn.CTB || null, zh: opsZh.CTB || null},
+                KMB: {
+                    en: opsEn.KMB || opsEn["KMB+CTB"] || null,
+                    zh: opsZh.KMB || opsZh["KMB+CTB"] || null
+                }
             },
             td: s.td || code,
             location: {lat: loc[0], lng: loc[1]},
@@ -463,6 +499,7 @@ function build(index, routeStop, stops, stopRoutes, operatorMap, nearby, nlbList
                 long: info.location.lng
             },
             code: code,
+            byCo: info.byCo,
             rt: [],
             alt: pairs.map(function (p) { return p[1]; })
         };
@@ -491,7 +528,7 @@ function build(index, routeStop, stops, stopRoutes, operatorMap, nearby, nlbList
     });
 
     return {
-        routeFareList: {routeList: routeList, stopList: stopList, stopMap: stopMap},
+        routeFareList: {routeList: routeList, stopList: stopList, stopMap: stopMap, nearby: nearby},
         legacy: {rtlist: rtlist, stoplist: legacyStops},
         counts: {variants: Object.keys(routeList).length, stops: Object.keys(stopList).length}
     };

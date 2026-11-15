@@ -24,6 +24,8 @@ td.rt{width:15%;font-size:clamp(16px,4.6vw,21px);font-weight:800;letter-spacing:
 td.mid{font-size:clamp(12px,3.4vw,15px);}
 td.mid .dst{font-weight:600;}
 td.mid .sub{font-size:clamp(10px,2.9vw,12px);color:var(--muted);margin-top:2px;}
+td.mid .sub .code{font-variant-numeric:tabular-nums;}
+td.mid .sub .nxt{color:#3a6f3a;}
 td.eta{width:26%;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
 td.eta .t{display:block;font-size:clamp(15px,4.4vw,19px);font-weight:700;color:var(--blue);}
 td.eta .dl{font-size:clamp(9px,2.6vw,11px);color:var(--warn);}
@@ -141,10 +143,16 @@ function render() {
         var tr = document.createElement("tr");
         tr.className = "arr" + (SE.input.color ? " p" + (row.stopIndex % 4) : "");
         tr.setAttribute("data-rid", id);
+        var sub = '<span class="code">' + esc(row.stopCode) + "</span> · "
+            + esc(row.stopName) + (row.seq ? " · " + row.seq : "");
+        var nxt = SE.nextStopInfo(row);
+        if (nxt) {
+            sub += '<br><span class="nxt">→ ' + esc(nxt.name) + " · " + nxt.distance + "m</span>";
+        }
         tr.innerHTML = '<td class="ic"><img alt="" src="' + iconOf(row) + '"></td>'
             + '<td class="rt">' + esc(row.route) + "</td>"
             + '<td class="mid"><div class="dst">' + esc(row.dest) + "</div>"
-            + '<div class="sub">' + esc(row.stopName) + (row.seq ? " · " + row.seq : "") + "</div></td>"
+            + '<div class="sub">' + sub + "</div></td>"
             + '<td class="eta"><b class="t" data-ts="' + row.eta + '">' + SE.etaText(row.eta) + "</b>"
             + (row.delay ? '<span class="dl">' + SE.delayText(row.delay) + "</span>" : "")
             + (SE.chgNote(row) ? '<span class="rmk">' + esc(SE.chgNote(row)) + "</span>" : "")

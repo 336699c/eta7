@@ -483,12 +483,14 @@ const coopStopName = localStorage.getItem('coopStopName') || "auto";
  * per-operator names only exist for English.
  */
 function stopNameFor(id){
-	if(RT_dt.costops && coopStopName != "auto" && lang2 == "en"){
-		var rec = BusCrawlingData.stopList[id];
+	var rec = BusCrawlingData.stopList[id];
+	if(coopStopName != "auto"){
 		var key = coopStopName == "kmb" ? "KMB" : "CTB";
-		if(rec && rec.byCo && rec.byCo[key])return rec.byCo[key];
+		var byCo = rec && rec.byCo && rec.byCo[key];
+		var name = byCo && (typeof byCo == "string" ? byCo : byCo[lang2]);
+		if(name)return name;
 	}
-	return BusCrawlingData.stopList[id].name[lang2];
+	return rec.name[lang2];
 }
 
 /** "Fare: $8.8 / $9.4" – every fare that applies from this stop. */
@@ -716,7 +718,7 @@ document.getElementById("stop_"+s).innerHTML = `
 			⏱️<br>車程
 		</button>
 </div>
-<iframe src="${"stop-eta-bystop.html?color=1&stops="+BusCrawling.getSameStop(s)+"&CHG="+RT_dt.co+"_"+RT_dt.route+"_"+RT_dt.bound}" id="iframe_stop_${s}"></iframe>
+<iframe src="${"stop-eta-byroute.html?color=1&byrt=1&stops="+BusCrawling.getNearbyStops(s,true).join(",")+"&CHG="+RT_dt.co+"_"+RT_dt.route+"_"+RT_dt.bound}" id="iframe_stop_${s}"></iframe>
 <div id="div_stop_${s}"></div>
 </div>
 `
@@ -834,7 +836,10 @@ function iframe_map_handler(s,t=null){
 function iframe_handler(s,t,w){
 	$('#iframe_stop_'+s).show();
 	$('#div_stop_'+s).hide();
-	$('#iframe_stop_'+s).attr('src',  "stop-eta-bystop.html?color=1&byrt=" + t + "&stops="+BusCrawling.getSameStop(s,w)+"&CHG="+RT_dt.co+"_"+RT_dt.route+"_"+RT_dt.bound);
+	var bystop = t==1;
+	var page = bystop ? "stop-eta-bystop.html" : "stop-eta-byroute.html";
+	var stops = BusCrawling.getNearbyStops(s,!bystop).join(",");
+	$('#iframe_stop_'+s).attr('src', page+"?color=1&byrt="+(bystop?0:1)+"&stops="+stops+"&CHG="+RT_dt.co+"_"+RT_dt.route+"_"+RT_dt.bound);
 }
 
 setInterval(function (){

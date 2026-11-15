@@ -361,6 +361,29 @@ this.getSameStop = function(id, id2){
     return tmp;
 }
 
+/**
+ * Nearby stop codes around a stop, taken from nearby.json.
+ * `forRoute` keeps only related stops: same normalised name (1), opposite pole
+ * with a shared route (2) or the same canonical TD stop (8). Proximity-only
+ * rows and stops of a different transport mode (4) are dropped.
+ * @param {string} id - operator stop id or public stop code
+ * @param {boolean} forRoute - use the route-based filter
+ * @return {Array<string>} public stop codes, starting with the clicked stop
+ */
+this.getNearbyStops = function(id, forRoute){
+    if(!data)return [id];
+    var info = data.stopList[id];
+    if(!info)return [id];
+    var code = info.code || id;
+    var out = [code];
+    ((data.nearby && data.nearby[code]) || []).forEach(function(row){
+        var flags = row[3] || 0;
+        if(forRoute && ((flags & 4) || !(flags & 11)))return;
+        if(out.indexOf(row[0]) < 0)out.push(row[0]);
+    });
+    return out;
+}
+
 this.getOppositeRoute = function(co,route,bound /* bound of #1 co */){
     if(typeof co == "string")co = co.toLowerCase().split("+");
     return Object.entries(BusCrawlingData.routeList).filter(([key, value])=>

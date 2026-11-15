@@ -152,10 +152,12 @@ function render() {
         tr.innerHTML = '<td class="ic"><img alt="" src="' + iconOf(row) + '"></td>'
             + '<td class="rt">' + esc(row.route) + "</td>"
             + '<td class="mid"><div class="dst">' + esc(row.dest) + "</div>"
-            + '<div class="sub">' + sub + "</div></td>"
+            + '<div class="sub">' + sub 
+                + (SE.chgNote(row) ? '<br><span class="rmk">' + esc(SE.chgNote(row)) + "</span>" : "")
+                + "</div></td>"
+            
             + '<td class="eta"><b class="t" data-ts="' + row.eta + '">' + SE.etaText(row.eta) + "</b>"
             + (row.delay ? '<span class="dl">' + SE.delayText(row.delay) + "</span>" : "")
-            + (SE.chgNote(row) ? '<span class="rmk">' + esc(SE.chgNote(row)) + "</span>" : "")
             + "</td>";
         tbody.appendChild(tr);
     });

@@ -387,7 +387,42 @@ this.getNearbyStops = function(id, forRoute){
 this.getOppositeRoute = function(co,route,bound /* bound of #1 co */){
     if(typeof co == "string")co = co.toLowerCase().split("+");
     return Object.entries(BusCrawlingData.routeList).filter(([key, value])=>
-        (value.co.length == co.length && JSON.stringify(value.co) == JSON.stringify(co)) && value.route==route && value.bound[co[0]]!=bound && value.serviceType == "1")
+        (value.co.length == co.length && JSON.stringify(value.co) == JSON.stringify(co)) && value.route==route && value.bound[co[0]]!=bound)
+}
+
+/**
+ * routeFareList key to open when switching direction: the currently running
+ * variant of the opposite bound, otherwise its base variant. This is the same
+ * target that route2/index opens for that direction.
+ * @param {Array<string>|string} co - company signature
+ * @param {string} route - route number
+ * @param {string} bound - bound of the currently displayed direction
+ * @return {string|null} routeFareList key
+ */
+this.getOppositeVariant = function(co, route, bound){
+    if(typeof co == "string")co = co.toLowerCase().split("+");
+    var entries = Object.entries(BusCrawlingData.routeList).filter(function(entry){
+        var value = entry[1];
+        return value.route == route && value.bound
+            && value.bound[co[0]] != null && value.bound[co[0]] != bound;
+    });
+    if(!entries.length)return null;
+
+    var same = entries.filter(function(entry){
+        var value = entry[1];
+        return value.co.length == co.length && JSON.stringify(value.co) == JSON.stringify(co);
+    });
+    if(same.length)entries = same;
+
+    entries.sort(function(a,b){
+        return ((parseInt(a[1].serviceType)||1) - (parseInt(b[1].serviceType)||1))
+            || (_routeCompanyCount(b[1]) - _routeCompanyCount(a[1]));
+    });
+
+    var variants = this.getRouteVariants(entries[0][0]);
+    if(!variants.length)return entries[0][0];
+    var active = variants.filter(function(v){return v.active;});
+    return (active.length ? active[0] : variants[0]).key;
 }
 }
 

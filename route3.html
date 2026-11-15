@@ -541,9 +541,8 @@ function regen(){
 	var s1 = resultT.insertCell(0);
 	
 
-	let opposite = BusCrawling.getOppositeRoute(RT_dt.cos,RT_dt.route,RT_dt.bounds[RT_dt.cos[0]]);
-	if(opposite.length>0)s3.innerHTML = `<a href="route3.html?${
-	BusCrawling.getOppositeRoute(RT_dt.cos,RT_dt.route,RT_dt.bounds[RT_dt.cos[0]])[0][0]}"><button class="rev"><img src="/eta7/icon/route_rev.png" class="img2"></button></a>`
+	let oppositeKey = BusCrawling.getOppositeVariant(RT_dt.cos,RT_dt.route,RT_dt.bounds[RT_dt.cos[0]]);
+	if(oppositeKey)s3.innerHTML = `<a href="route3.html?${oppositeKey}"><button class="rev"><img src="/eta7/icon/route_rev.png" class="img2"></button></a>`
 	
 	s4.innerHTML = `<button class="TimerSettings" id="TimerSettings" onclick="TimerSettings()"><img src="/eta7/icon/time_cd.png" class="TimerDisplay img2"></button>`
 	document.title = `${RT_dt.route}  ${RT_dt.data.dest.zh}`;

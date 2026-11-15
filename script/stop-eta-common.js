@@ -276,9 +276,9 @@
         });
         SE.flat = [].concat.apply([], SE.stops.map(function (s) { return s.rows; }));
         return SE.flat.filter(function (r) { return !SE.hidden(r); }).sort(function (a, b) {
+            if (a.eta !== b.eta) return a.eta - b.eta;
             var c = routeCmp(a.route, b.route);
             if (c) return c;
-            if (a.eta !== b.eta) return a.eta - b.eta;
             return a.stopIndex - b.stopIndex;
         });
     };
@@ -352,7 +352,7 @@
             return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
         }
         var s = Math.round((ts - Date.now()) / 1000);
-        if (s <= 0) return "即將";
+        //if (s <= 0) return "即將";
         if (s < 60) return s + "秒";
         var m = Math.floor(s / 60);
         if (m < 60) {

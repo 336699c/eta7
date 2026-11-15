@@ -41,6 +41,8 @@ td.ic img{width:34px;height:auto;display:block;}
 .noeta{font-size:clamp(12px,3.3vw,14px);color:var(--muted);}
 .rmk{margin-top:5px;font-size:clamp(10px,2.8vw,12px);color:var(--warn);}
 .empty{padding:22px 14px;font-size:clamp(12px,3.4vw,15px);color:var(--muted);}
+.nearhdr{padding:12px 14px 9px;background:#eef1f5;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+ font-size:clamp(12px,3.2vw,14px);font-weight:600;color:var(--muted);letter-spacing:.5px;}
 tr.prog td{background:#f8fafc;padding:10px 12px 12px 52px;}
 .prog-t{font-size:clamp(10px,2.8vw,12px);color:var(--muted);margin-bottom:5px;letter-spacing:.5px;}
 .prog-r{display:flex;gap:8px;align-items:baseline;font-size:clamp(11px,3vw,13px);padding:2px 0;}
@@ -156,7 +158,7 @@ function renderStop(stop, groups) {
     if (!groups.length) {
         var p = document.createElement("div");
         p.className = "empty";
-        p.textContent = stop.rows.length ? "所有路綫已隱藏" : "沒有途經此站的巴士";
+        p.textContent = (stop.rows.length || stop.rt.length) ? "所有路綫已隱藏" : "沒有途經此站的巴士";
         sec.appendChild(p);
         return sec;
     }
@@ -171,7 +173,9 @@ function renderStop(stop, groups) {
             + (g.fare ? '<span class="fare">' + esc(g.fare) + "</span>" : "")
             + "</div>"
             + '<div class="l2">'
-            + shown.map(function (r) { return etaChip(r, g.joint); }).join("")
+            + (shown.length
+                ? shown.map(function (r) { return etaChip(r, g.joint); }).join("")
+                : '<span class="noeta">暫無班次</span>')
             + "</div>"
             + '<div class="rmk">' + esc(SE.chgNote(g.etas[0])) + "</div>"
             + "</td></tr>";
@@ -193,19 +197,45 @@ function render() {
     SE.stops.forEach(function (stop, i) {
         if (SE.hiddenStops[stop.code]) return;
         var groups = SE.routeGroups(stop);
-        var eta = groups.length ? groups[0].etas[0].eta : Infinity;
+        var eta = groups.length && groups[0].etas.length ? groups[0].etas[0].eta : Infinity;
         list.push({stop: stop, groups: groups, eta: eta, index: i});
     });
 
-    list.sort(function (a, b) {
+    function cmpEta(a, b) {
         return (a.eta - b.eta) || (a.index - b.index);
-    });
+    }
 
-    list.forEach(function (item) {
+    function appendStop(item) {
         var sec = renderStop(item.stop, item.groups);
         if (SE.input.color) sec.style.background = ["#fff", "#f7fbff", "#fffdf7", "#f8fff9"][item.index % 4];
         host.appendChild(sec);
-    });
+    }
+
+    var orig = SE.input.origstop;
+    var same = orig ? SE.sameStopCodes(orig) : null;
+
+    if (same) {
+        var top = [], rest = [];
+        list.forEach(function (item) {
+            (same[item.stop.code] ? top : rest).push(item);
+        });
+        top.sort(function (a, b) {
+            return (same[a.stop.code].dist - same[b.stop.code].dist) || (a.index - b.index);
+        });
+        rest.sort(cmpEta);
+
+        top.forEach(appendStop);
+        if (rest.length && top.length) {
+            var hdr = document.createElement("div");
+            hdr.className = "nearhdr";
+            hdr.textContent = "其他附近巴士站";
+            host.appendChild(hdr);
+        }
+        rest.forEach(appendStop);
+    } else {
+        list.sort(cmpEta);
+        list.forEach(appendStop);
+    }
 
     emptyBox.hidden = list.length > 0;
 }

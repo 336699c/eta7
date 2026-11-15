@@ -18,6 +18,7 @@
 
     SE.input = {};
     SE.legacy = null;
+    SE.nearby = {};
     SE.stops = [];
     SE.flat = [];
     SE.CHG = null;
@@ -102,6 +103,7 @@
             nort: q.nort ? q.nort.split(",").filter(Boolean) : [],
             byrt: q.byrt == "1" || q.byrt == "true",
             bkmark: q.bkmark,
+            origstop: q.origstop || null,
             CHG: q.CHG || null
         };
         return SE.input;
@@ -113,6 +115,7 @@
         if (SE.input.color) p.color = 1;
         if (SE.input.nort.length) p.nort = SE.input.nort.join(",");
         if (SE.input.bkmark) p.bkmark = SE.input.bkmark;
+        if (SE.input.origstop) p.origstop = SE.input.origstop;
         if (SE.input.CHG) p.CHG = SE.input.CHG;
         return page + "?" + Object.keys(p).map(function (k) {
             return k + "=" + encodeURIComponent(p[k]);
@@ -126,7 +129,10 @@
             function run() {
                 Eta6.legacy().then(function (d) {
                     SE.legacy = d;
-                    resolve(d);
+                    return Eta6.routeFareList();
+                }).then(function (d) {
+                    SE.nearby = (d && d.nearby) || {};
+                    resolve(SE.legacy);
                 }).catch(reject);
             }
             if (global.Eta6) return run();
@@ -173,6 +179,27 @@
                 rows: []
             });
         });
+    };
+
+    /**
+     * Same physical stop group around `code`, keyed by public stop code.
+     * A nearby row counts when its flag has bit 8 (the TD dataset treats
+     * both poles as one stop). The requested stop itself is always included.
+     * @param {string} code - public stop code or operator stop id
+     * @return {Object<string,{dist:number}>}
+     */
+    SE.sameStopCodes = function (code) {
+        var out = {};
+        if (!code) return out;
+        var rec = SE.legacy && SE.legacy.stoplist[code];
+        var base = (rec && rec.code) || code;
+        out[base] = {dist: -1};
+        ((SE.nearby || {})[base] || []).forEach(function (row) {
+            if (!((row[3] || 0) & 8)) return;
+            if (out[row[0]]) return;
+            out[row[0]] = {dist: row[1] || 0};
+        });
+        return out;
     };
 
     function normCTB(list, stop) {
@@ -243,6 +270,33 @@
         return !!(has.CTB && has.KMB);
     }
 
+    /**
+     * Every static route pattern that calls at this stop, regardless of
+     * whether the live ETA feed currently has an arrival for it.
+     * @param {object} stop - legacy stop record
+     * @return {Array<{co:string,route:string,dest:string,dir:string}>}
+     */
+    function staticGroupsAt(stop) {
+        var out = [];
+        (stop.rt || []).forEach(function (key) {
+            var cut = key.indexOf("_");
+            if (cut < 0) return;
+            var co = key.slice(0, cut);
+            var route = key.slice(cut + 1);
+            var entry = SE.legacy && SE.legacy.rtlist[co] && SE.legacy.rtlist[co][route];
+            if (!entry) return;
+            Object.keys(entry.var).forEach(function (vk) {
+                var v = entry.var[vk];
+                var hit = stop.ids.some(function (id) {
+                    return v.stops.indexOf(id) >= 0;
+                });
+                if (!hit) return;
+                out.push({co: co, route: route, dest: v.dest_tc || "", dir: v.bound});
+            });
+        });
+        return out;
+    }
+
     SE.routeGroups = function (stop) {
         var map = {};
         stop.rows.forEach(function (r) {
@@ -252,6 +306,17 @@
             map[k].dirs[r.dir] = 1;
             map[k].cos[r.co] = 1;
             map[k].etas.push(r);
+        });
+        // routes with no live arrival still get a row, using the static data
+        var liveRoute = {};
+        Object.keys(map).forEach(function (k) { liveRoute[map[k].route] = 1; });
+        staticGroupsAt(stop).forEach(function (s) {
+            if (liveRoute[s.route]) return;
+            var k = s.route + "|" + destKey(s.dest);
+            if (SE.input.nort.indexOf(k) >= 0) return;
+            if (!map[k]) map[k] = {key: k, route: s.route, dest: s.dest, dirs: {}, cos: {}, etas: []};
+            map[k].dirs[s.dir] = 1;
+            map[k].cos[s.co] = 1;
         });
         return Object.keys(map).map(function (k) {
             var g = map[k];
@@ -296,6 +361,13 @@
                 }
                 SE.knownKeys[k].cosMap[r.co] = 1;
             });
+            staticGroupsAt(s).forEach(function (g) {
+                var k = g.route + "|" + destKey(g.dest);
+                if (!SE.knownKeys[k]) {
+                    SE.knownKeys[k] = {key: k, route: g.route, dest: g.dest, cosMap: {}};
+                }
+                SE.knownKeys[k].cosMap[g.co] = 1;
+            });
         });
         return Object.keys(SE.knownKeys).map(function (k) {
             var e = SE.knownKeys[k];
@@ -323,7 +395,9 @@
         var co = cos[0];
         if (co == "CTB" && /^(A|NA)\d/.test(route)) return "ctb_airport";
         if (co == "KMB" && /^(A|NA)\d/.test(route)) return "lwb";
-        return co.toLowerCase();
+        if (co == "NLB") return "NLB";
+        if (co == "LRTFEEDER" || co == "MTR") return "LRTFEEDER";
+        return co ? co.toLowerCase() : "kmb";
     };
 
     SE.fare = function (row) {
@@ -370,7 +444,7 @@
     };
 
     SE.chgNote = function (row) {
-        if (!SE.CHG || !SE.input.CHG) return "";
+        if (!row || !SE.CHG || !SE.input.CHG) return "";
         var entry = SE.CHG[SE.input.CHG];
         var list = entry && entry[1];
         if (!list) return "";

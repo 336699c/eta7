@@ -20,6 +20,7 @@ header button{border:none;background:transparent;font-size:clamp(20px,6vw,28px);
  padding:9px 14px;background:#eaf0f8;border-bottom:1px solid var(--line);}
 .stopbar .dot{width:9px;height:9px;border-radius:50%;background:var(--blue);flex:none;}
 .stopbar .nm{font-size:clamp(15px,4.3vw,20px);font-weight:700;color:var(--blue);}
+.stopbar .dist{font-size:clamp(10px,2.7vw,12px);color:var(--muted);font-variant-numeric:tabular-nums;}
 .stopbar .code{margin-left:auto;font-size:clamp(10px,2.7vw,12px);color:var(--muted);font-variant-numeric:tabular-nums;}
 .stopbar .rm{border:none;background:transparent;color:#b43;font-size:clamp(18px,5vw,24px);line-height:1;padding:0 4px;cursor:pointer;}
 table.etas{width:100%;border-collapse:collapse;}
@@ -138,13 +139,14 @@ function etaChip(row, joint) {
         + "</span>";
 }
 
-function renderStop(stop, groups) {
+function renderStop(stop, groups, distance) {
     var sec = document.createElement("section");
     sec.className = "stopsec";
 
     var bar = document.createElement("div");
     bar.className = "stopbar";
     bar.innerHTML = '<span class="dot"></span><span class="nm">' + esc(stop.name_tc) + "</span>"
+        + (distance == null ? "" : '<span class="dist">' + distance + "m</span>")
         + '<span class="code">' + esc(stop.code) + "</span>";
     var rm = document.createElement("button");
     rm.className = "rm";
@@ -197,7 +199,10 @@ function render() {
     SE.stops.forEach(function (stop, i) {
         if (SE.hiddenStops[stop.code]) return;
         var groups = SE.routeGroups(stop);
-        var eta = groups.length && groups[0].etas.length ? groups[0].etas[0].eta : Infinity;
+        var eta = Infinity;
+        groups.forEach(function (g) {
+            if (g.etas.length && g.etas[0].eta < eta) eta = g.etas[0].eta;
+        });
         list.push({stop: stop, groups: groups, eta: eta, index: i});
     });
 
@@ -205,8 +210,9 @@ function render() {
         return (a.eta - b.eta) || (a.index - b.index);
     }
 
-    function appendStop(item) {
-        var sec = renderStop(item.stop, item.groups);
+    function appendStop(item, withDistance) {
+        var distance = withDistance ? SE.nearbyDistance(orig, item.stop.code) : null;
+        var sec = renderStop(item.stop, item.groups, distance);
         if (SE.input.color) sec.style.background = ["#fff", "#f7fbff", "#fffdf7", "#f8fff9"][item.index % 4];
         host.appendChild(sec);
     }
@@ -224,17 +230,17 @@ function render() {
         });
         rest.sort(cmpEta);
 
-        top.forEach(appendStop);
+        top.forEach(function (item) { appendStop(item, false); });
         if (rest.length && top.length) {
             var hdr = document.createElement("div");
             hdr.className = "nearhdr";
             hdr.textContent = "其他附近巴士站";
             host.appendChild(hdr);
         }
-        rest.forEach(appendStop);
+        rest.forEach(function (item) { appendStop(item, true); });
     } else {
         list.sort(cmpEta);
-        list.forEach(appendStop);
+        list.forEach(function (item) { appendStop(item, false); });
     }
 
     emptyBox.hidden = list.length > 0;

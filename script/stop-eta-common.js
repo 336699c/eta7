@@ -202,6 +202,27 @@
         return out;
     };
 
+    /**
+     * Walking distance in metres between two stops, preferring the value
+     * published in nearby.json and falling back to the stop coordinates.
+     * @param {string} from - public stop code or operator stop id
+     * @param {string} to - public stop code or operator stop id
+     * @return {number|null}
+     */
+    SE.nearbyDistance = function (from, to) {
+        if (!from || !to) return null;
+        var a = SE.legacy && SE.legacy.stoplist[from];
+        var b = SE.legacy && SE.legacy.stoplist[to];
+        var base = (a && a.code) || from;
+        var code = (b && b.code) || to;
+        var rows = (SE.nearby || {})[base] || [];
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i][0] === code) return rows[i][1];
+        }
+        if (!a || !b || !a.data || !b.data) return null;
+        return Math.round(haversine(a.data.lat, a.data.long, b.data.lat, b.data.long));
+    };
+
     function normCTB(list, stop) {
         return (list || []).map(function (w) {
             return {
@@ -271,10 +292,20 @@
     }
 
     /**
+     * Numeric suffix of a direction key: "O1" -> 1, "I2" -> 2, "O" -> 1.
+     * @param {string} dir
+     * @return {number}
+     */
+    function variantNumber(dir) {
+        var m = /(\d+)$/.exec(dir || "");
+        return m ? parseInt(m[1], 10) : 1;
+    }
+
+    /**
      * Every static route pattern that calls at this stop, regardless of
      * whether the live ETA feed currently has an arrival for it.
      * @param {object} stop - legacy stop record
-     * @return {Array<{co:string,route:string,dest:string,dir:string}>}
+     * @return {Array<{co:string,route:string,dest:string,dir:string,no:number}>}
      */
     function staticGroupsAt(stop) {
         var out = [];
@@ -291,7 +322,10 @@
                     return v.stops.indexOf(id) >= 0;
                 });
                 if (!hit) return;
-                out.push({co: co, route: route, dest: v.dest_tc || "", dir: v.bound});
+                out.push({
+                    co: co, route: route, dest: v.dest_tc || "",
+                    dir: v.bound, no: variantNumber(v.bound)
+                });
             });
         });
         return out;
@@ -307,16 +341,29 @@
             map[k].cos[r.co] = 1;
             map[k].etas.push(r);
         });
-        // routes with no live arrival still get a row, using the static data
+        // routes with no live arrival still get a row, using the static data;
+        // only the lowest-numbered variant is kept so one route shows once
         var liveRoute = {};
         Object.keys(map).forEach(function (k) { liveRoute[map[k].route] = 1; });
+        var byRoute = {};
         staticGroupsAt(stop).forEach(function (s) {
             if (liveRoute[s.route]) return;
-            var k = s.route + "|" + destKey(s.dest);
+            (byRoute[s.route] || (byRoute[s.route] = [])).push(s);
+        });
+        Object.keys(byRoute).forEach(function (route) {
+            var list = byRoute[route];
+            var best = list[0];
+            list.forEach(function (s) {
+                if (s.no < best.no) best = s;
+            });
+            var k = route + "|" + destKey(best.dest);
             if (SE.input.nort.indexOf(k) >= 0) return;
-            if (!map[k]) map[k] = {key: k, route: s.route, dest: s.dest, dirs: {}, cos: {}, etas: []};
-            map[k].dirs[s.dir] = 1;
-            map[k].cos[s.co] = 1;
+            if (!map[k]) map[k] = {key: k, route: route, dest: best.dest, dirs: {}, cos: {}, etas: []};
+            list.forEach(function (s) {
+                if ((route + "|" + destKey(s.dest)) !== k) return;
+                map[k].dirs[s.dir] = 1;
+                map[k].cos[s.co] = 1;
+            });
         });
         return Object.keys(map).map(function (k) {
             var g = map[k];
@@ -328,10 +375,12 @@
             g.fare = SE.fare(g.etas[0]);
             return g;
         }).sort(function (a, b) {
+            var c = routeCmp(a.route, b.route);
+            if (c) return c;
             var ea = a.etas.length ? a.etas[0].eta : Infinity;
             var eb = b.etas.length ? b.etas[0].eta : Infinity;
             if (ea !== eb) return ea - eb;
-            return routeCmp(a.route, b.route);
+            return a.dest > b.dest ? 1 : (a.dest < b.dest ? -1 : 0);
         });
     };
 

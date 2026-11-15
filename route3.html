@@ -838,7 +838,7 @@ function iframe_handler(s,t,w){
 	var bystop = t==1;
 	var page = bystop ? "stop-eta-bystop.html" : "stop-eta-byroute.html";
 	var stops = BusCrawling.getNearbyStops(s,!bystop).join(",");
-	$('#iframe_stop_'+s).attr('src', page+"?color=1&byrt="+(bystop?0:1)+"&stops="+stops+"&CHG="+RT_dt.co+"_"+RT_dt.route+"_"+RT_dt.bound);
+	$('#iframe_stop_'+s).attr('src', page+"?color=1&byrt="+(bystop?0:1)+"&origstop="+s+"&stops="+stops+"&CHG="+RT_dt.co+"_"+RT_dt.route+"_"+RT_dt.bound);
 }
 
 setInterval(function (){

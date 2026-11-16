@@ -407,11 +407,20 @@ function build(index, routeStop, stops, stopRoutes, operatorMap, nearby, nlbList
             bound[k] = useOI ? "OI" : ((v.bounds && v.bounds[origin[k]]) || derivedBound[vid] || v.bound || "O");
         });
 
+        // Coop variants publish the TD code each operator actually uses
+        // (operatorStopCodes); resolving the shared `stops` list would point
+        // at the other operator's pole and lose that company's ETAs.
+        var codesByCo = {};
         var stopsByCo = {};
         stopOrder.forEach(function (k) {
             var op = OP_FOR[k];
-            stopsByCo[k] = (v.stops || []).map(function (code) {
-                return resolve(op, code) || code;
+            var base = v.stops || [];
+            var list = (v.operatorStopCodes && v.operatorStopCodes[op]) || base;
+            codesByCo[k] = base.map(function (code, i) {
+                return list[i] == null || list[i] === "" ? code : list[i];
+            });
+            stopsByCo[k] = codesByCo[k].map(function (code, i) {
+                return resolve(op, code) || resolve(op, base[i]) || code;
             });
         });
 
@@ -427,6 +436,7 @@ function build(index, routeStop, stops, stopRoutes, operatorMap, nearby, nlbList
             circular: circular,
             stops: stopsByCo,
             codes: (v.stops || []).slice(),
+            codesByCo: codesByCo,
             fares: fareArray(v.fares, (v.stops || []).length),
             freq: toFreq(v),
             tdRouteId: v.tdRouteId || null,
@@ -455,8 +465,11 @@ function build(index, routeStop, stops, stopRoutes, operatorMap, nearby, nlbList
             if (!rtlist[CO]) return;                    // GMB is not part of the site
 
             var op = opKey(c);
-            var ids = (v.stops || []).map(function (code) {
-                return resolve(op, code) || code;
+            var base = v.stops || [];
+            var list = (v.operatorStopCodes && v.operatorStopCodes[op]) || base;
+            var ids = base.map(function (code, i) {
+                var opCode = list[i] == null || list[i] === "" ? code : list[i];
+                return resolve(op, opCode) || resolve(op, code) || opCode;
             });
 
             var dir = useOI ? "OI" : ((v.bounds && v.bounds[c]) || derivedBound[vid] || v.bound || "O");

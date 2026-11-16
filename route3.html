@@ -500,6 +500,30 @@ function fareLabel(i){
 	return "<br>" + _bundles.fare[lang] + ": $" + list.join(" / $");
 }
 
+/**
+ * Stop-number text for one row. Coop variants publish a separate TD code for
+ * each operator (operatorStopCodes); when those codes differ, show both – the
+ * 3-character codes or the operator stop ids, following the user setting.
+ * @param {number} i - stop index
+ * @param {string} fallback - stop id of the first company
+ * @return {string} code text, or "" when stop numbers are hidden
+ */
+function stopCodeLabel(i, fallback){
+	if(localStorage.getItem('stopNumber') !== 'true')return "";
+	var byCo = stopIdMode == "code" ? (RT_dt.codesByCo || {}) : (RT_dt.stopsByCo || {});
+	var values = [];
+	Object.keys(byCo).forEach(function(c){
+		var list = byCo[c];
+		var v = list ? list[i] : null;
+		if(v == null || v === "" || values.indexOf(v) >= 0)return;
+		values.push(v);
+	});
+	if(!values.length){
+		return stopIdMode == "code" ? (RT_dt.codes[i] || fallback || "") : (fallback || "");
+	}
+	return values.join(" ");
+}
+
 //MODE_1 byroute INIT
 var TimeDisplay = false;
 
@@ -521,11 +545,13 @@ function regen(){
 	RT_dt.data = BusCrawlingData.routeList[routeKey];
 	RT_dt.stops = Object.values(RT_dt.data.stops)[0];
 	RT_dt.costops = Object.values(RT_dt.data.stops)[1];
+	RT_dt.stopsByCo = RT_dt.data.stops || {};
 	RT_dt.route = RT_dt.data.route;
 	RT_dt.bound = Object.values(RT_dt.data.bound)[0];
 	RT_dt.bounds = RT_dt.data.bound;
 	RT_dt.serviceType = RT_dt.data.serviceType;
 	RT_dt.codes = RT_dt.data.codes || [];
+	RT_dt.codesByCo = RT_dt.data.codesByCo || {};
 	RT_dt.fares = RT_dt.data.fares || [];
 	RT_dt.co = RT_dt.data.co.join("+").toUpperCase();
 	RT_dt.cos = RT_dt.data.co;
@@ -573,11 +599,10 @@ function regen(){
 			displayName[0] = displayName[0].replace(/.+轉車站 ?- ?/,"");
 		}
 		if(RT_dt.co=="KMB" && lang=="en")displayName[0] = BusCrawling.toSentenceCase(displayName[0]);
-		const stopNumber = localStorage.getItem('stopNumber') === 'true';
 		RT_dt.stopNickname.push(displayName[0]);
 
 		s.innerHTML = `<button onclick="click2('${w}', ${i+1}, ${RT_dt.costops?"'"+RT_dt.costops[i]+"'":""})" class="rss"><table class="stoptable"><td class="stopid2"><label class="stopid">${i+1}</label></td><td class="stopname3">
-			<label class="stopname2"><big>${displayName[0]}</big>${fareLabel(i)}<br><small><small>${displayName[1]} ${!stopNumber ? "" : (stopIdMode=="code" ? (RT_dt.codes[i]||w) : w + (RT_dt.costops?" "+RT_dt.costops[i]:""))}</small></small></label></td></div>
+			<label class="stopname2"><big>${displayName[0]}</big>${fareLabel(i)}<br><small><small>${displayName[1]} ${stopCodeLabel(i, w)}</small></small></label></td></div>
 			<td class="bus" id="bus_${w}_${i+1}"> </td><td class="eta" id="eta_${w}_${i+1}"></td></table></button><div id="stop_${w}">`
 	});
 	getETA();

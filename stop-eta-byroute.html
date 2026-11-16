@@ -96,7 +96,6 @@ var emptyBox = document.getElementById("empty");
 var ovl = document.getElementById("ovl");
 var cfgBody = document.getElementById("cfg_body");
 var rowRefs = {};
-var groupCos = {};
 
 function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -110,28 +109,13 @@ function hhmmss(d) {
     }).join(":");
 }
 
-/* every operator that serves one route/destination pair, for the joint icon */
-function buildGroupCos() {
-    groupCos = {};
-    SE.stops.forEach(function (s) {
-        s.rows.forEach(function (r) {
-            var k = SE.groupKey(r);
-            if (!groupCos[k]) groupCos[k] = {};
-            groupCos[k][r.co] = 1;
-        });
-    });
-}
-
 function iconOf(row) {
-    var cos = Object.keys(groupCos[SE.groupKey(row)] || {});
-    if (!cos.length) cos = [row.co];
-    return "icon/" + SE.iconFor(cos, row.route) + ".png";
+    return "icon/" + SE.iconForRow(row) + ".png";
 }
 
 function render() {
     document.getElementById("upd").textContent = "更新 " + hhmmss(new Date());
     rowRefs = {};
-    buildGroupCos();
 
     var rows = SE.flatRows();
     tbody.innerHTML = "";

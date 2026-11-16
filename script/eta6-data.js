@@ -439,6 +439,7 @@ function build(index, routeStop, stops, stopRoutes, operatorMap, nearby, nlbList
     /* ---------- eta2 _rtlist / _stoplist shape ---------- */
 
     var rtlist = {"CTB": {}, "KMB": {}, "NLB": {}, "LRTFEEDER": {}};
+    var lwbRoutes = {};     // route -> 1, routes actually operated by LWB
     var dirSeq = {};        // "CO|route|I" -> how many patterns seen so far
 
     Object.keys(routeStop).forEach(function (vid) {
@@ -449,6 +450,7 @@ function build(index, routeStop, stops, stopRoutes, operatorMap, nearby, nlbList
         var useOI = circular && coKey((v.co || [])[0]) === "ctb";
 
         (v.co || []).forEach(function (c) {
+            if (c === "LWB") lwbRoutes[v.route] = 1;
             var CO = c === "LWB" ? "KMB" : (c === "LRTFeeder" ? "LRTFEEDER" : c);
             if (!rtlist[CO]) return;                    // GMB is not part of the site
 
@@ -529,7 +531,7 @@ function build(index, routeStop, stops, stopRoutes, operatorMap, nearby, nlbList
 
     return {
         routeFareList: {routeList: routeList, stopList: stopList, stopMap: stopMap, nearby: nearby},
-        legacy: {rtlist: rtlist, stoplist: legacyStops},
+        legacy: {rtlist: rtlist, stoplist: legacyStops, lwbRoutes: lwbRoutes},
         counts: {variants: Object.keys(routeList).length, stops: Object.keys(stopList).length}
     };
 }

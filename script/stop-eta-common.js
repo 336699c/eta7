@@ -449,6 +449,16 @@
         return co ? co.toLowerCase() : "kmb";
     };
 
+    /** Icon for one arrival row, using that row's actual operator. */
+    SE.iconForRow = function (row) {
+        if (!row) return "kmb";
+        if (row.co == "KMB" && SE.legacy && SE.legacy.lwbRoutes
+                && SE.legacy.lwbRoutes[row.route]) {
+            return "lwb";
+        }
+        return SE.iconFor([row.co], row.route);
+    };
+
     SE.fare = function (row) {
         if (!row) return "";
         var co = row.co == "LWB" ? "KMB" : row.co;
